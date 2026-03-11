@@ -15,11 +15,17 @@ export interface Company {
   category: string;
   founded?: number;
   acquisitionDetails?: string;
+  acquisitionPrice?: string;
+  yearAcquired?: number;
   ipoDetails?: string;
   shutdownDetails?: string;
   notes?: string;
   website?: string;
   lessonLearned?: string;
+  totalFunding?: string;
+  fundingRounds?: string;
+  keyInvestors?: string[];
+  bootstrapped?: boolean;
 }
 
 export const STATUS_LABELS: Record<CompanyStatus, string> = {

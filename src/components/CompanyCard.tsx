@@ -3,7 +3,17 @@
 import Link from "next/link";
 import { Company, STATUS_LABELS, STATUS_COLORS } from "@/lib/types";
 
+function yearsToExit(company: Company): string | null {
+  const start = company.founded;
+  const end = company.yearAcquired;
+  if (!start || !end) return null;
+  const years = end - start;
+  return `${years}y to exit`;
+}
+
 export function CompanyCard({ company }: { company: Company }) {
+  const exitTime = yearsToExit(company);
+
   return (
     <Link
       href={`/company/${company.id}`}
@@ -40,6 +50,38 @@ export function CompanyCard({ company }: { company: Company }) {
       <p className="text-sm text-gray-400 line-clamp-2 mb-3">
         {company.description}
       </p>
+
+      {/* Funding & Exit metrics */}
+      <div className="flex flex-wrap gap-2 mb-3">
+        {company.totalFunding && (
+          <span className="text-xs bg-gray-800/70 text-gray-300 px-2 py-0.5 rounded">
+            Raised {company.totalFunding}
+          </span>
+        )}
+        {company.acquisitionPrice && (
+          <span className="text-xs bg-blue-900/40 text-blue-300 px-2 py-0.5 rounded">
+            Exit {company.acquisitionPrice}
+          </span>
+        )}
+        {exitTime && (
+          <span className="text-xs bg-gray-800/70 text-gray-400 px-2 py-0.5 rounded">
+            {exitTime}
+          </span>
+        )}
+        {company.bootstrapped && (
+          <span className="text-xs bg-orange-900/30 text-orange-300 px-2 py-0.5 rounded">
+            Bootstrapped
+          </span>
+        )}
+      </div>
+
+      {/* Investors preview */}
+      {company.keyInvestors && company.keyInvestors.length > 0 && (
+        <p className="text-xs text-gray-500 line-clamp-1 mb-2">
+          {company.keyInvestors.slice(0, 3).join(" · ")}
+          {company.keyInvestors.length > 3 && ` +${company.keyInvestors.length - 3}`}
+        </p>
+      )}
 
       {/* Outcome details */}
       {company.acquisitionDetails && (
