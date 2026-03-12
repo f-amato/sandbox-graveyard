@@ -1647,10 +1647,12 @@ export const companies: Company[] = [
     year: 2020,
     winner: false,
     description: "Vulnerability remediation orchestration — prioritize and fix vulns across tools.",
-    status: "active",
+    status: "acquired",
     category: "Vulnerability Management",
     source: "rsac",
     founded: 2018,
+    acquisitionDetails: "Acquired by Tenable in 2025 to supercharge exposure management platform Tenable One",
+    yearAcquired: 2025,
   },
   {
     id: slug("SECURITI", 2020),
