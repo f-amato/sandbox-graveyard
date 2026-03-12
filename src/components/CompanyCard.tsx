@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Company, STATUS_LABELS, STATUS_COLORS } from "@/lib/types";
+import { Company, STATUS_LABELS, STATUS_COLORS, SOURCE_COLORS, SOURCE_LABELS } from "@/lib/types";
 
 function yearsToExit(company: Company): string | null {
   const start = company.founded;
@@ -19,11 +19,14 @@ export function CompanyCard({ company }: { company: Company }) {
       href={`/company/${company.id}`}
       className="group block bg-card-bg border border-card-border rounded-xl p-5 hover:border-accent/40 hover:bg-card-bg/80"
     >
-      {/* Top row: year badge + status */}
+      {/* Top row: source + year badge + status */}
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className={`text-xs px-2 py-0.5 rounded border ${SOURCE_COLORS[company.source]}`}>
+            {SOURCE_LABELS[company.source]}
+          </span>
           <span className="text-xs font-mono text-gray-500 bg-gray-800/50 px-2 py-0.5 rounded">
-            {company.year}
+            {company.ycBatch ? `${company.ycBatch}` : company.year}
           </span>
           {company.winner && (
             <span className="text-xs font-medium text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 px-2 py-0.5 rounded">

@@ -5,6 +5,8 @@ export type CompanyStatus =
   | "shutdown"
   | "unknown";
 
+export type CompanySource = "rsac" | "yc" | "both";
+
 export interface Company {
   id: string;
   name: string;
@@ -13,6 +15,8 @@ export interface Company {
   description: string;
   status: CompanyStatus;
   category: string;
+  source: CompanySource;
+  ycBatch?: string;
   founded?: number;
   acquisitionDetails?: string;
   acquisitionPrice?: string;
@@ -27,6 +31,18 @@ export interface Company {
   keyInvestors?: string[];
   bootstrapped?: boolean;
 }
+
+export const SOURCE_LABELS: Record<CompanySource, string> = {
+  rsac: "RSAC ISB",
+  yc: "Y Combinator",
+  both: "RSAC + YC",
+};
+
+export const SOURCE_COLORS: Record<CompanySource, string> = {
+  rsac: "bg-purple-500/20 text-purple-400 border-purple-500/30",
+  yc: "bg-orange-500/20 text-orange-400 border-orange-500/30",
+  both: "bg-pink-500/20 text-pink-400 border-pink-500/30",
+};
 
 export const STATUS_LABELS: Record<CompanyStatus, string> = {
   acquired: "Acquired",

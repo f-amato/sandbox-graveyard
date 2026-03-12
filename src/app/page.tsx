@@ -2,7 +2,15 @@
 
 import { useState, useMemo } from "react";
 import { companies, getYears } from "@/lib/data";
-import { CompanyStatus, STATUS_LABELS, STATUS_COLORS, CATEGORIES } from "@/lib/types";
+import {
+  CompanyStatus,
+  CompanySource,
+  STATUS_LABELS,
+  STATUS_COLORS,
+  SOURCE_LABELS,
+  SOURCE_COLORS,
+  CATEGORIES,
+} from "@/lib/types";
 import { CompanyCard } from "@/components/CompanyCard";
 import { StatsBar } from "@/components/StatsBar";
 
@@ -10,6 +18,7 @@ export default function Home() {
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<CompanyStatus | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedSource, setSelectedSource] = useState<CompanySource | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showWinnersOnly, setShowWinnersOnly] = useState(false);
 
@@ -20,28 +29,39 @@ export default function Home() {
       if (selectedYear && c.year !== selectedYear) return false;
       if (selectedStatus && c.status !== selectedStatus) return false;
       if (selectedCategory && c.category !== selectedCategory) return false;
+      if (selectedSource) {
+        if (selectedSource === "both" && c.source !== "both") return false;
+        if (selectedSource === "rsac" && c.source !== "rsac" && c.source !== "both") return false;
+        if (selectedSource === "yc" && c.source !== "yc" && c.source !== "both") return false;
+      }
       if (showWinnersOnly && !c.winner) return false;
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
         return (
           c.name.toLowerCase().includes(q) ||
           c.description.toLowerCase().includes(q) ||
-          c.category.toLowerCase().includes(q)
+          c.category.toLowerCase().includes(q) ||
+          (c.ycBatch && c.ycBatch.toLowerCase().includes(q))
         );
       }
       return true;
     });
-  }, [selectedYear, selectedStatus, selectedCategory, searchQuery, showWinnersOnly]);
+  }, [selectedYear, selectedStatus, selectedCategory, selectedSource, searchQuery, showWinnersOnly]);
 
   const clearFilters = () => {
     setSelectedYear(null);
     setSelectedStatus(null);
     setSelectedCategory(null);
+    setSelectedSource(null);
     setSearchQuery("");
     setShowWinnersOnly(false);
   };
 
-  const hasFilters = selectedYear || selectedStatus || selectedCategory || searchQuery || showWinnersOnly;
+  const hasFilters = selectedYear || selectedStatus || selectedCategory || selectedSource || searchQuery || showWinnersOnly;
+
+  const rsacCount = companies.filter((c) => c.source === "rsac" || c.source === "both").length;
+  const ycCount = companies.filter((c) => c.source === "yc" || c.source === "both").length;
+  const bothCount = companies.filter((c) => c.source === "both").length;
 
   return (
     <main className="min-h-screen bg-background">
@@ -54,7 +74,7 @@ export default function Home() {
                 <span className="text-accent">Sandbox</span> Graveyard
               </h1>
               <p className="mt-2 text-gray-400 max-w-2xl">
-                20 years of RSAC Innovation Sandbox companies — the acquired, the IPO&apos;d,
+                Cybersecurity startups from RSAC Innovation Sandbox & Y Combinator — the acquired, the IPO&apos;d,
                 the shutdown, and the survivors. Every startup is a lesson.
               </p>
             </div>
@@ -76,7 +96,7 @@ export default function Home() {
           <div className="mb-4">
             <input
               type="text"
-              placeholder="Search companies, descriptions, categories..."
+              placeholder="Search companies, descriptions, categories, YC batches..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-card-bg border border-card-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder-gray-500 focus:outline-none focus:border-accent"
@@ -85,6 +105,29 @@ export default function Home() {
 
           {/* Filter rows */}
           <div className="space-y-3">
+            {/* Source filter */}
+            <div>
+              <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">Source</div>
+              <div className="flex flex-wrap gap-1.5">
+                {(Object.keys(SOURCE_LABELS) as CompanySource[]).map((source) => (
+                  <button
+                    key={source}
+                    onClick={() => setSelectedSource(selectedSource === source ? null : source)}
+                    className={`px-2.5 py-1 text-xs rounded-md border cursor-pointer ${
+                      selectedSource === source
+                        ? SOURCE_COLORS[source]
+                        : "bg-card-bg text-gray-400 border-card-border hover:border-gray-600"
+                    }`}
+                  >
+                    {SOURCE_LABELS[source]}
+                    <span className="ml-1 text-gray-600">
+                      {source === "rsac" ? rsacCount : source === "yc" ? ycCount : bothCount}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Year filter */}
             <div>
               <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">Year</div>
@@ -190,14 +233,14 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-card-border py-8 text-center text-xs text-gray-600">
         <p>
-          Data compiled from RSAC Conference archives, press releases, and public sources.
+          Data compiled from RSAC Conference archives, Y Combinator directory, press releases, and public sources.
         </p>
         <p className="mt-1">
           Inspired by{" "}
           <a href="https://startups.rip" className="text-accent hover:underline" target="_blank" rel="noopener noreferrer">
             startups.rip
           </a>
-          {" "}| Not affiliated with RSA Conference.
+          {" "}| Not affiliated with RSA Conference or Y Combinator.
         </p>
       </footer>
     </main>

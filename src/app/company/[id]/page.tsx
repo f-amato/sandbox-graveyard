@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { companies, getCompanyById } from "@/lib/data";
-import { STATUS_LABELS, STATUS_COLORS } from "@/lib/types";
+import { STATUS_LABELS, STATUS_COLORS, SOURCE_LABELS, SOURCE_COLORS } from "@/lib/types";
 
 export function generateStaticParams() {
   return companies.map((c) => ({ id: c.id }));
@@ -27,8 +27,16 @@ export default async function CompanyPage({
   const company = getCompanyById(id);
   if (!company) notFound();
 
+  // Show peers from same year AND same source program
   const peers = companies.filter(
-    (c) => c.year === company.year && c.id !== company.id
+    (c) =>
+      c.year === company.year &&
+      c.id !== company.id &&
+      (company.source === "yc"
+        ? c.source === "yc" || c.source === "both"
+        : company.source === "rsac"
+        ? c.source === "rsac" || c.source === "both"
+        : true)
   );
 
   const yearsToExit =
@@ -49,8 +57,16 @@ export default async function CompanyPage({
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-3 flex-wrap">
+            <span className={`text-sm px-3 py-0.5 rounded border ${SOURCE_COLORS[company.source]}`}>
+              {SOURCE_LABELS[company.source]}
+            </span>
+            {company.ycBatch && (
+              <span className="text-sm font-mono text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded">
+                YC {company.ycBatch}
+              </span>
+            )}
             <span className="text-sm font-mono text-gray-500 bg-gray-800/50 px-2 py-0.5 rounded">
-              ISB {company.year}
+              {company.source === "yc" ? company.year : `ISB ${company.year}`}
             </span>
             {company.winner && (
               <span className="text-sm font-medium text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 px-3 py-0.5 rounded">
@@ -195,7 +211,7 @@ export default async function CompanyPage({
         {peers.length > 0 && (
           <div className="mt-12">
             <h2 className="text-lg font-semibold text-foreground mb-4">
-              Other {company.year} Finalists
+              Other {company.year} {company.source === "yc" ? "YC Security" : "ISB"} Companies
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {peers.map((peer) => (
