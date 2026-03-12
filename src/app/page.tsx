@@ -242,6 +242,21 @@ export default function Home() {
           </a>
           {" "}| Not affiliated with RSA Conference or Y Combinator.
         </p>
+        <div className="mt-4 flex items-center justify-center gap-1.5">
+          <span className="text-gray-500">Powered by</span>
+          <a
+            href="https://faradaysec.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-gray-400 hover:text-[#0082FF] transition-colors"
+          >
+            <svg width="14" height="18" viewBox="0 0 14 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="0" y="8" width="8" height="10" rx="1" fill="#0082FF"/>
+              <rect x="6" y="0" width="8" height="10" rx="1" fill="#0082FF"/>
+            </svg>
+            <span className="font-medium">Faraday</span>
+          </a>
+        </div>
       </footer>
     </main>
   );
