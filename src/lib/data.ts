@@ -1240,12 +1240,12 @@ export const companies: Company[] = [
     year: 2017,
     winner: false,
     description: "Multi-cloud micro-segmentation and network security.",
-    status: "shutdown",
+    status: "acquired",
     category: "Cloud Security",
     source: "rsac",
-    shutdownDetails: "Company ceased operations around 2021.",
+    acquisitionDetails: "Acquired by Fortinet (FTNT) — integrated into FortiGate network security platform",
     lessonLearned:
-      "Multi-cloud micro-segmentation was crowded. Lesson: when multiple well-funded competitors solve the same problem, capital alone can't save you.",
+      "Multi-cloud micro-segmentation found a home inside a platform vendor. Lesson: niche capabilities get absorbed by firewall giants seeking cloud relevance.",
   },
   {
     id: slug("Solebit", 2017),
