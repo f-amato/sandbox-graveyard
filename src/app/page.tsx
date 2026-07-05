@@ -33,6 +33,7 @@ export default function Home() {
         if (selectedSource === "both" && c.source !== "both") return false;
         if (selectedSource === "rsac" && c.source !== "rsac" && c.source !== "both") return false;
         if (selectedSource === "yc" && c.source !== "yc" && c.source !== "both") return false;
+        if (selectedSource === "faraday" && c.source !== "faraday") return false;
       }
       if (showWinnersOnly && !c.winner) return false;
       if (searchQuery) {
@@ -62,6 +63,14 @@ export default function Home() {
   const rsacCount = companies.filter((c) => c.source === "rsac" || c.source === "both").length;
   const ycCount = companies.filter((c) => c.source === "yc" || c.source === "both").length;
   const bothCount = companies.filter((c) => c.source === "both").length;
+  const faradayCount = companies.filter((c) => c.source === "faraday").length;
+
+  const sourceCounts: Record<CompanySource, number> = {
+    rsac: rsacCount,
+    yc: ycCount,
+    both: bothCount,
+    faraday: faradayCount,
+  };
 
   return (
     <main className="min-h-screen bg-background">
@@ -121,7 +130,7 @@ export default function Home() {
                   >
                     {SOURCE_LABELS[source]}
                     <span className="ml-1 text-gray-600">
-                      {source === "rsac" ? rsacCount : source === "yc" ? ycCount : bothCount}
+                      {sourceCounts[source]}
                     </span>
                   </button>
                 ))}

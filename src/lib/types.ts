@@ -5,7 +5,7 @@ export type CompanyStatus =
   | "shutdown"
   | "unknown";
 
-export type CompanySource = "rsac" | "yc" | "both";
+export type CompanySource = "rsac" | "yc" | "both" | "faraday";
 
 export interface Company {
   id: string;
@@ -36,12 +36,14 @@ export const SOURCE_LABELS: Record<CompanySource, string> = {
   rsac: "RSAC ISB",
   yc: "Y Combinator",
   both: "RSAC + YC",
+  faraday: "Faraday",
 };
 
 export const SOURCE_COLORS: Record<CompanySource, string> = {
   rsac: "bg-purple-500/20 text-purple-400 border-purple-500/30",
   yc: "bg-orange-500/20 text-orange-400 border-orange-500/30",
   both: "bg-pink-500/20 text-pink-400 border-pink-500/30",
+  faraday: "bg-[#0082FF]/20 text-[#0082FF] border-[#0082FF]/40",
 };
 
 export const STATUS_LABELS: Record<CompanyStatus, string> = {
@@ -63,6 +65,7 @@ export const STATUS_COLORS: Record<CompanyStatus, string> = {
 export const CATEGORIES = [
   "AI Security",
   "Application Security",
+  "Offensive Security (COST / ASOC / CTEM)",
   "Cloud Security",
   "Data Security",
   "Endpoint Security",

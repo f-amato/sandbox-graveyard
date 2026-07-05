@@ -36,6 +36,8 @@ export default async function CompanyPage({
         ? c.source === "yc" || c.source === "both"
         : company.source === "rsac"
         ? c.source === "rsac" || c.source === "both"
+        : company.source === "faraday"
+        ? c.source === "faraday"
         : true)
   );
 
@@ -66,7 +68,7 @@ export default async function CompanyPage({
               </span>
             )}
             <span className="text-sm font-mono text-gray-500 bg-gray-800/50 px-2 py-0.5 rounded">
-              {company.source === "yc" ? company.year : `ISB ${company.year}`}
+              {company.source === "rsac" || company.source === "both" ? `ISB ${company.year}` : company.year}
             </span>
             {company.winner && (
               <span className="text-sm font-medium text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 px-3 py-0.5 rounded">
