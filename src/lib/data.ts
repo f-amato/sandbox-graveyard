@@ -12,7 +12,7 @@ export const companies: Company[] = [
     year: 2015,
     winner: false,
     description:
-      "The all-in-one platform that brings offensive security, vulnerability management, and ASPM together in one place, consolidating every finding into a single source of truth.",
+      "Faraday is the all-in-one platform that brings offensive security, vulnerability management, and ASPM together in one place. With 300+ integrations across SAST, DAST, SCA, cloud, and pentest, it consolidates every finding into a single source of truth. On top of that sits FaradAI: a multi-LLM agents layer that combines autonomous attack simulation, AI-powered vulnerability triage, and automated remediation. The result is a shift from static lists of vulnerabilities to a living understanding of what can actually be exploited—and a clear path to fixing it.",
     status: "active",
     category: "Offensive Security (COST / ASOC / CTEM)",
     source: "faraday",
@@ -20,7 +20,7 @@ export const companies: Company[] = [
     website: "https://faradaysec.com/",
     bootstrapped: true,
     notes:
-      "Faraday is the all-in-one platform that brings offensive security, vulnerability management, and ASPM together in one place. With 300+ integrations across SAST, DAST, SCA, cloud, and pentest, it consolidates every finding into a single source of truth. On top of that sits FaradAI: a multi-LLM agents layer that combines autonomous attack simulation, AI-powered vulnerability triage, and automated remediation. The result is a shift from static lists of vulnerabilities to a living understanding of what can actually be exploited—and a clear path to fixing it. Built by Infobyte; headquartered in Miami with a research lab in Buenos Aires. Powers this project.",
+      "Built by Infobyte; headquartered in Miami with a research lab in Buenos Aires. Powers this project.",
   },
 
   // ===== 2005 =====
