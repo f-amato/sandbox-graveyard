@@ -15,29 +15,25 @@ jobs:
         with:
           fetch-depth: 0
 
-      # --- SAST: SonarCloud (cloud analysis) ---
+      # Connect faraday-cli once. It reads a token from its config file
+      # (there is no --token flag on `auth`), so seed it from a CI secret.
+      - name: Setup faraday-cli
+        run: |
+          pip install --quiet faraday-cli
+          cat > ~/.faraday-cli.yml <<YAML
+          auth:
+            faraday_url: $FARADAY_URL
+            ignore_ssl: false
+            token: ${{ secrets.FARADAY_TOKEN }}
+          YAML
+
+      # SAST — SonarCloud analyses the source, then results go to Faraday
       - name: SonarQube (SonarCloud) scan
         uses: SonarSource/sonarqube-scan-action@v5
         continue-on-error: true
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
-        with:
-          args: >
-            -Dsonar.qualitygate.wait=true
-
-      # --- faraday-cli auth (token via config file; auth has no --token flag) ---
-      - name: Setup faraday-cli
-        run: |
-          pip install --quiet faraday-cli
-          cat > ~/.faraday-cli.yml <<YAML
-          auth:
-            faraday_url: ${{ env.FARADAY_URL }}
-            ignore_ssl: false
-            token: ${{ secrets.FARADAY_TOKEN }}
-          YAML
-
-      # --- Import SonarCloud issues into Faraday ---
       - name: Import SonarCloud issues into Faraday
         run: |
           curl -s -u "${{ secrets.SONAR_TOKEN }}:" \
@@ -46,70 +42,60 @@ jobs:
           echo "SonarCloud issues: $(python3 -c 'import json;print(len(json.load(open("sonarqube.json")).get("issues",[])))')"
           faraday-cli tool report sonarqube.json -w "$WS" --create-workspace
 
-      # --- DAST: Dastardly (Burp) against the live deployment ---
-      # Manual-only (workflow_dispatch): the ~10-min Burp scan is skipped on
-      # normal pushes; the last report is reused instead of re-scanning.
+      # DAST — Burp's CLI (Dastardly) scans the live URL, then results go to Faraday.
+      # Dastardly emits JUnit (no faraday-cli plugin), so convert -> bulk_create.
       - name: Dastardly DAST
-        if: github.event_name == 'workflow_dispatch'
         uses: PortSwigger/dastardly-github-action@main
         continue-on-error: true
         with:
           target-url: https://sandbox-graveyard.vercel.app/
-
-      # Dastardly emits JUnit XML (no faraday-cli plugin), so convert -> bulk_create
       - name: Import Dastardly report into Faraday
-        if: github.event_name == 'workflow_dispatch'
         env:
           FARADAY_TOKEN: ${{ secrets.FARADAY_TOKEN }}
         run: |
-          ls -la *.xml || true
-          if [ -f dastardly-report.xml ]; then
-            head -c 1200 dastardly-report.xml; echo
-            python3 scripts/dastardly_to_faraday.py dastardly-report.xml
-          else
-            echo "no dastardly-report.xml produced"
+          python3 scripts/dastardly_to_faraday.py dastardly-report.xml
+
+      # Step 1 — FaradAI autonomous pentest against the live deployment.
+      # FaradAI is a Faraday Cloud Agent (id=2), triggered via /cloud_agents/<id>/run
+      # (faraday-cli has no cloud-agent command). Fire-and-forget: the runner
+      # executes asynchronously and pushes findings into the workspace.
+      - name: FaradAI scan (Cloud Agent)
+        env:
+          FARADAY_TOKEN: ${{ secrets.FARADAY_TOKEN }}
+        run: |
+          curl -sS -X POST "$FARADAY_URL/_api/v3/cloud_agents/2/run" \
+            -H "Authorization: Token $FARADAY_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "args": {
+                "TARGET": "sandbox-graveyard.vercel.app",
+                "INSTRUCTION": "Full recon + web-app pentest: auth, IDOR, SSRF, API abuse, exposed secrets. Validate and chain real exploits.",
+                "GOAL": "Find and prove real, exploitable web/app vulnerabilities on the target.",
+                "MODE": "Dual",
+                "ROUNDS": 5,
+                "BUDGET_USD": 20,
+                "DRY_RUN": false,
+                "TIME_LIMIT_SECONDS": 86400
+              },
+              "workspaces": ["vercel-sandbox-graveyard"]
+            }' -w "\nHTTP %{http_code}\n"
+
+      # Step 2 — FaradAI triage & patching over the whole workspace.
+      # Placeholder: needs a triage Cloud Agent — set FARADAI_TRIAGE_AGENT_ID once
+      # it exists. No-ops until then (continue-on-error).
+      - name: FaradAI triage (Cloud Agent)
+        continue-on-error: true
+        env:
+          FARADAY_TOKEN: ${{ secrets.FARADAY_TOKEN }}
+        run: |
+          if [ -z "${{ secrets.FARADAI_TRIAGE_AGENT_ID }}" ]; then
+            echo "No triage Cloud Agent configured yet (set FARADAI_TRIAGE_AGENT_ID). Skipping."
+            exit 0
           fi
-
-      - name: Upload Dastardly report artifact
-        if: github.event_name == 'workflow_dispatch'
-        uses: actions/upload-artifact@v4
-        with:
-          name: dastardly-report
-          path: dastardly-report.xml
-          if-no-files-found: ignore
-
-      # === Phase 2: FaradAI (autonomous pentest + triage/patching) ===
-      # These use the FaradAI dispatcher agent's `aipentest` and `triage`
-      # executors. Set the FARADAI_AGENT_ID secret once that agent is
-      # registered to Faraday. Manual-only + continue-on-error until then.
-
-      # FaradAI autonomous pentest over the live deployment
-      - name: FaradAI scan
-        if: github.event_name == 'workflow_dispatch'
-        continue-on-error: true
-        run: |
-          faraday-cli agent run \
-            -a "${{ secrets.FARADAI_AGENT_ID }}" \
-            -e aipentest \
-            -w "$WS" \
-            -p '{
-              "TARGET": "https://sandbox-graveyard.vercel.app/",
-              "INSTRUCTION": "Full recon + web-app pentest: auth, IDOR, SSRF, API abuse, exposed secrets",
-              "MODE": "dual",
-              "ROUNDS": "5"
-            }'
-
-      # FaradAI triage & patching over the whole workspace (all sources)
-      - name: FaradAI triage
-        if: github.event_name == 'workflow_dispatch'
-        continue-on-error: true
-        run: |
-          faraday-cli agent run \
-            -a "${{ secrets.FARADAI_AGENT_ID }}" \
-            -e triage \
-            -w "$WS" \
-            -p '{
-              "WORKSPACE_NAME": "vercel-sandbox-graveyard",
-              "MODE": "dual",
-              "PATCHING_MODE": "dry-run"
-            }'
+          curl -sS -X POST "$FARADAY_URL/_api/v3/cloud_agents/${{ secrets.FARADAI_TRIAGE_AGENT_ID }}/run" \
+            -H "Authorization: Token $FARADAY_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "args": {"WORKSPACE_NAME": "vercel-sandbox-graveyard", "MODE": "Dual", "PATCHING_MODE": "dry-run"},
+              "workspaces": ["vercel-sandbox-graveyard"]
+            }' -w "\nHTTP %{http_code}\n"
