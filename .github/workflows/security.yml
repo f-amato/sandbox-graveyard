@@ -77,3 +77,39 @@ jobs:
           name: dastardly-report
           path: dastardly-report.xml
           if-no-files-found: ignore
+
+      # === Phase 2: FaradAI (autonomous pentest + triage/patching) ===
+      # These use the FaradAI dispatcher agent's `aipentest` and `triage`
+      # executors. Set the FARADAI_AGENT_ID secret once that agent is
+      # registered to Faraday. Manual-only + continue-on-error until then.
+
+      # FaradAI autonomous pentest over the live deployment
+      - name: FaradAI scan
+        if: github.event_name == 'workflow_dispatch'
+        continue-on-error: true
+        run: |
+          faraday-cli agent run \
+            -a "${{ secrets.FARADAI_AGENT_ID }}" \
+            -e aipentest \
+            -w "$WS" \
+            -p '{
+              "TARGET": "https://sandbox-graveyard.vercel.app/",
+              "INSTRUCTION": "Full recon + web-app pentest: auth, IDOR, SSRF, API abuse, exposed secrets",
+              "MODE": "dual",
+              "ROUNDS": "5"
+            }'
+
+      # FaradAI triage & patching over the whole workspace (all sources)
+      - name: FaradAI triage
+        if: github.event_name == 'workflow_dispatch'
+        continue-on-error: true
+        run: |
+          faraday-cli agent run \
+            -a "${{ secrets.FARADAI_AGENT_ID }}" \
+            -e triage \
+            -w "$WS" \
+            -p '{
+              "WORKSPACE_NAME": "vercel-sandbox-graveyard",
+              "MODE": "dual",
+              "PATCHING_MODE": "dry-run"
+            }'
