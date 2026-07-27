@@ -26,7 +26,18 @@ def severity_of(text: str) -> str:
     return SEV.get(m.group(1).lower(), "informational") if m else "informational"
 
 
-root = ET.parse(REPORT).getroot()
+def _bad(v: int) -> bool:
+    # chars illegal in XML 1.0
+    return v < 0x9 or v in (0xB, 0xC) or 0xE <= v <= 0x1F
+
+
+with open(REPORT, "rb") as fh:
+    raw = fh.read().decode("utf-8", "replace")
+# strip illegal numeric char references + raw control chars Dastardly may embed
+raw = re.sub(r"&#x([0-9a-fA-F]+);", lambda m: "" if _bad(int(m.group(1), 16)) else m.group(0), raw)
+raw = re.sub(r"&#(\d+);", lambda m: "" if _bad(int(m.group(1))) else m.group(0), raw)
+raw = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", "", raw)
+root = ET.fromstring(raw)
 by_host: dict[str, list] = {}
 count = 0
 for ts in root.iter("testsuite"):

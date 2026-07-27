@@ -66,3 +66,11 @@ jobs:
           else
             echo "no dastardly-report.xml produced"
           fi
+
+      - name: Upload Dastardly report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dastardly-report
+          path: dastardly-report.xml
+          if-no-files-found: ignore
