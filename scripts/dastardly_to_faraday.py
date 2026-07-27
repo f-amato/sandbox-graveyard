@@ -10,6 +10,7 @@ Env: FARADAY_URL, FARADAY_TOKEN, WS   Arg: report path (default dastardly-report
 import os, sys, re, json, socket, urllib.request, urllib.error
 import xml.etree.ElementTree as ET
 from urllib.parse import urlparse
+from datetime import datetime, timezone
 
 REPORT = sys.argv[1] if len(sys.argv) > 1 else "dastardly-report.xml"
 FARADAY_URL = os.environ["FARADAY_URL"].rstrip("/")
@@ -73,9 +74,20 @@ print(f"Dastardly -> Faraday: {count} findings across {len(hosts)} host(s)")
 if not count:
     sys.exit(0)
 
+payload = {
+    "command": {
+        "tool": "Dastardly",
+        "command": "dastardly (Burp) DAST scan",
+        "user": "ci",
+        "hostname": "github-actions",
+        "start_date": datetime.now(timezone.utc).isoformat(),
+        "import_source": "report",
+    },
+    "hosts": hosts,
+}
 req = urllib.request.Request(
     f"{FARADAY_URL}/_api/v3/ws/{WS}/bulk_create",
-    data=json.dumps({"hosts": hosts}).encode(),
+    data=json.dumps(payload).encode(),
     headers={"Authorization": f"Token {TOKEN}", "Content-Type": "application/json"},
     method="POST",
 )

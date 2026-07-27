@@ -47,7 +47,10 @@ jobs:
           faraday-cli tool report sonarqube.json -w "$WS" --create-workspace
 
       # --- DAST: Dastardly (Burp) against the live deployment ---
+      # Manual-only (workflow_dispatch): the ~10-min Burp scan is skipped on
+      # normal pushes; the last report is reused instead of re-scanning.
       - name: Dastardly DAST
+        if: github.event_name == 'workflow_dispatch'
         uses: PortSwigger/dastardly-github-action@main
         continue-on-error: true
         with:
@@ -55,7 +58,7 @@ jobs:
 
       # Dastardly emits JUnit XML (no faraday-cli plugin), so convert -> bulk_create
       - name: Import Dastardly report into Faraday
-        if: always()
+        if: github.event_name == 'workflow_dispatch'
         env:
           FARADAY_TOKEN: ${{ secrets.FARADAY_TOKEN }}
         run: |
@@ -68,7 +71,7 @@ jobs:
           fi
 
       - name: Upload Dastardly report artifact
-        if: always()
+        if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
           name: dastardly-report
