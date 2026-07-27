@@ -1,0 +1,66 @@
+name: security-pipeline
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    env:
+      FARADAY_URL: https://manaos.apps.faradaysec.com
+      WS: vercel-sandbox-graveyard
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # --- SAST: SonarCloud (cloud analysis) ---
+      - name: SonarQube (SonarCloud) scan
+        uses: SonarSource/sonarqube-scan-action@v5
+        continue-on-error: true
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
+        with:
+          args: >
+            -Dsonar.qualitygate.wait=true
+
+      # --- faraday-cli auth (token via config file; auth has no --token flag) ---
+      - name: Setup faraday-cli
+        run: |
+          pip install --quiet faraday-cli
+          cat > ~/.faraday-cli.yml <<YAML
+          auth:
+            faraday_url: ${{ env.FARADAY_URL }}
+            ignore_ssl: false
+            token: ${{ secrets.FARADAY_TOKEN }}
+          YAML
+
+      # --- Import SonarCloud issues into Faraday ---
+      - name: Import SonarCloud issues into Faraday
+        run: |
+          curl -s -u "${{ secrets.SONAR_TOKEN }}:" \
+            "https://sonarcloud.io/api/issues/search?componentKeys=f-amato_sandbox-graveyard&resolved=false&ps=500" \
+            -o sonarqube.json
+          echo "SonarCloud issues: $(python3 -c 'import json;print(len(json.load(open("sonarqube.json")).get("issues",[])))')"
+          faraday-cli tool report sonarqube.json -w "$WS" --create-workspace
+
+      # --- DAST: Dastardly (Burp) against the live deployment ---
+      - name: Dastardly DAST
+        uses: PortSwigger/dastardly-github-action@main
+        continue-on-error: true
+        with:
+          target-url: https://sandbox-graveyard.vercel.app/
+
+      - name: Import Dastardly report into Faraday
+        if: always()
+        run: |
+          ls -la *.xml || true
+          for f in dastardly-report.xml burp.xml; do
+            if [ -f "$f" ]; then
+              echo "importing $f"
+              faraday-cli tool report "$f" -w "$WS"
+              break
+            fi
+          done
