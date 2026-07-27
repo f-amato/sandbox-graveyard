@@ -53,14 +53,16 @@ jobs:
         with:
           target-url: https://sandbox-graveyard.vercel.app/
 
+      # Dastardly emits JUnit XML (no faraday-cli plugin), so convert -> bulk_create
       - name: Import Dastardly report into Faraday
         if: always()
+        env:
+          FARADAY_TOKEN: ${{ secrets.FARADAY_TOKEN }}
         run: |
           ls -la *.xml || true
-          for f in dastardly-report.xml burp.xml; do
-            if [ -f "$f" ]; then
-              echo "importing $f"
-              faraday-cli tool report "$f" -w "$WS"
-              break
-            fi
-          done
+          if [ -f dastardly-report.xml ]; then
+            head -c 1200 dastardly-report.xml; echo
+            python3 scripts/dastardly_to_faraday.py dastardly-report.xml
+          else
+            echo "no dastardly-report.xml produced"
+          fi
